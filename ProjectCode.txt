@@ -1,0 +1,291 @@
+#31 march version 1
+#16 Feb 2022
+#Quantum Blockchain Security - Practical Implementation
+# Quantum Sim
+
+
+
+def menu():
+    print("Main Menu")
+    print("----------------------")
+    print()
+    print()
+    print("Program Options: ----")
+    print("0.Terminate Program")
+    print()
+    print("1.Shor's Factoring Algorithm - Time estimate for finding the prime factors of large semiprimes") 
+    print()
+    print("2.Grover's Algorithm - Time estimate for brute force of one way functions" )
+    print()
+    print("3.Classical - General Number Field Sieve - Best factoring algorithm using classical means")
+    print()
+
+
+def GNFS(KeyLength): # receives key as argument, searches for the time it would take to find prime factors of given key - it DOES NOT attempt to find the factors
+
+    #main formula source: https://math.stackexchange.com/questions/1640930/how-long-does-the-general-number-field-sieve-actually-take
+    #other RSAs factored and unfactored: https://en.wikipedia.org/wiki/RSA_numbers#RSA-768
+    from numpy import log as ln # source https://www.delftstack.com/howto/numpy/natural-log-python/#:~:text=number%20in%20Python.-,Calculate%20Natural%20Log%20of%20a%20Number%20With%20log()%20Function,base%20e%20where%20e%20%3D%202.718%20.
+    import math
+    import decimal
+    from decimal import Decimal
+    getcontext().prec = 30 # conservation of desired decimal values: https://stackoverflow.com/questions/48031020/python-keeping-precision-when-dividing
+    
+    n = (2 ** KeyLength)
+    
+    #result = Decimal((math.log(math.log(n)))**(2/3)) # calculating: (lnln(N))^2/3
+    #CHECK FRACTION IN LOG BELOW
+    #x = Decimal (64./9.)
+    x = 7.1111111111111111111111111
+    
+    result = Decimal ( Decimal (x ** (1./3.)) * Decimal(math.log(n)**(1/3)) * Decimal ((math.log(math.log(n)))**(2/3)) )  # calculating: ∛(64/9) * ln(N)^1/3 * (lnln(N))^2/3
+    #source of math.log: https://www.w3schools.com/python/ref_math_log.asp  - Decimal(math.log(x,3)) replaced by:Decimal (x ** (1./3.)) 
+    #source of 1./3. division, which is more precise and fixed the inaccuracy issues: https://appdividend.com/2021/06/14/how-to-find-cube-root-in-python/#:~:text=To%20calculate%20Python%20cube%20root,whether%20the%20result%20equals%20x.
+    
+    result = Decimal(math.exp(result)) # calculating: e^ (∛(64/9) * ln(N)^1/3 * (lnln(N))^2/3)
+    
+    result = Decimal (result / (10**12))
+    result = Decimal (result / 3600)
+    result = Decimal (result / 24)
+    result = Decimal (result / 365)
+    
+    # Coppersmith's modification ----------------------------------------------
+    # Application of Coppersmith's Modification - Consisting of the substitution of constant ∛(64/9) by (1/3 * (92 + 26 * √13)^1/3) , this latter being equal to 1.902 
+    # Therefore, where N = 2^bits (eg 2^768),equation changes from e^ (∛(64/9) * ln(N)^1/3 * (lnln(N))^2/3) /10^12/3600/24/365 to ... e^ (1/3 * (92 + 26 * √13)^1/3 * ln(N)^1/3 * (lnln(N))^2/3) /10^12/3600/24/365 or this latter being equal to e^ (1.902  * ln(N)^1/3 * (lnln(N))^2/3) /10^12/3600/24/365
+    # As explained here:https://math.stackexchange.com/questions/1640930/how-long-does-the-general-number-field-sieve-actually-take
+    
+    #similar code again with said modification
+    Copper_result = Decimal ( Decimal( (1./3.) * (92 + 26 * 13 ** (1./2.) ) ** (1./3.) ) * Decimal(math.log(n)**(1/3)) * Decimal ((math.log(math.log(n)))**(2/3)) ) # modification is on this line ONLY
+    Copper_result = Decimal(math.exp(Copper_result)) 
+    Copper_result = Decimal (Copper_result / (10**12))
+    Copper_result = Decimal (Copper_result / 3600)
+    Copper_result = Decimal (Copper_result / 24)
+    Copper_result = Decimal (Copper_result / 365)
+    
+    
+    
+    
+    
+    
+    # Presentation of complete GNFS findings ----------------------------------------------: 
+    
+    print("***************Classical Estimation Notes*************************")
+    print()
+    print("Through the use of the complexity equation for the General Number Field Sieve, which, for integers larger than 10^100, is the most efficient classical algorithm for factorisation")
+    print()
+    print("Estimated computing time, with classical means, considering a single-core 2.2GHz machine, time/iterations:")
+    print("\033[1;31;48m") #for red colour - details here: https://ozzmaker.com/add-colour-to-text-in-python/#:~:text=To%20make%20some%20of%20your,right%20into%20the%20print%20statement.&text=1%20%3D%20Style%2C%201%20for%20normal.
+    print(result)
+    print("\033[1;37;48m") #for white colour (reversal)
+    print()
+    print("Note: When estimating different key sizes CPU manufactuer and performance are a vital aspect of the calculation. Any results are approximations that are likely to change.")
+    print()
+    print("Useful Sources: https://math.stackexchange.com/questions/1640930/how-long-does-the-general-number-field-sieve-actually-take")
+    print("https://cstheory.stackexchange.com/questions/32508/what-is-worst-case-complexity-of-number-field-sieve")
+    print("https://en.wikipedia.org/wiki/General_number_field_sieve")
+    print()
+    print()
+    print("****Results after Coppersmith's Modification (in years)****")
+    print("\033[1;31;48m") #for red colour
+    print(Copper_result)
+    print("\033[1;37;48m") #for white colour (reversal)
+    print("****End of Results after Coppersmith's Modification****")
+    print()
+    print()
+    print("For calibration/evaluation of the tool, input the 768 key size, and the 'Coppersmith's Modification' should output a value close to 2000")
+    print("This value is expected, following (Aoki et al, 2010) and after the application of modifications to the complexity equation, following (Coppersmith,1990) and the post by Sergey Zaitsev below:")
+    print()
+    print("https://math.stackexchange.com/questions/1640930/how-long-does-the-general-number-field-sieve-actually-take")
+    print("Aoki et al. (2010) 'Factorization of 768-bit RSA modulus' Available at: https://eprint.iacr.org/2010/006.pdf")
+    print("Coppersmith (1990) 'Modifications to the Number Field Sieve' Available at: https://link.springer.com/content/pdf/10.1007/BF00198464.pdf")
+    print("***************End of Classical Estimation Notes*************************")
+    
+    
+    
+def Shor():
+    # first step is to generate a key to consider
+    
+    
+    algo = int(input("Select an algorithm to use with Shor - 1.RSA or 2.ECC: "))
+    
+    if algo == 1: # RSA ---------------------------------------
+    
+        #Key Size selection
+        KeySize = int(input("Please enter key size - up to 15360 (eg 1024,2048) (CANNOT BE LOWER THAN 1024): "))
+        
+        print()
+        print()
+        
+        if KeySize >= 1024 and KeySize <= 8192:
+            try:
+            
+                # Key Generation
+                
+                import Crypto.PublicKey 
+                from Crypto.PublicKey import RSA
+                key = RSA.generate (KeySize)
+                p_key = key.publickey().exportKey("PEM")
+                priv_key = key.exportKey("PEM")
+                print("++++++++++++++++Public Key+++++++++++++++")
+                print()
+                print(p_key)
+                print()
+                print("++++++++++++++++End of Public Key+++++++++++++++")
+                print()
+                print()
+                print("++++++++++++++++Private Key+++++++++++++++")
+                print()
+                print(priv_key)
+                print()
+                print("++++++++++++++++End of Private Key+++++++++++++++")
+            
+            except:
+                print("Key Generation Error - resuming with calculation")
+        
+        # time estimation
+        
+        print()
+        print()
+        print("++++++++++++++++Output Data+++++++++++++++")
+        print("Note: This is an estimated value, due to the fragility of quantum states, quantum error correction will require many more qubits than the ones shown below.")
+        print("\033[1;31;48m") #for red colour - details here: https://ozzmaker.com/add-colour-to-text-in-python/#:~:text=To%20make%20some%20of%20your,right%20into%20the%20print%20statement.&text=1%20%3D%20Style%2C%201%20for%20normal.
+        
+        req_qubits = 2 * KeySize
+        gates_time = 4 * KeySize**3
+        reqEC_qubits = 4 * KeySize
+        
+      
+        print()
+        print("For a key of size: %d" %(KeySize))
+        print("Required perfect qubits: %d" %(req_qubits))
+        print ("Number of Gates (Time) estimate: %d" %(gates_time))
+        print("In addition to about %d error correction (EC) qubits + any overheads" %(reqEC_qubits))
+        print("\033[1;37;48m") #for white colour (reversal)
+    
+        # --------------- Stage two (optional)
+        print()
+        print()
+        print("++++++++++++++++Optional - Classical Factorisation - Stage Two+++++++++++++++")      
+        stageTwo = input("Enter (y) to estimate the factorisation with classical means: ")
+        if stageTwo == "y":
+            GNFS(KeySize)
+
+
+
+
+    if algo == 2: #ECC ---------------------------------------
+       
+        #Key Size selection
+        ECC_key = int(input("Please enter key size - up to 15360 (eg 1024,2048): "))
+        
+        # Key Generation
+        #ECC key generation omitted, as the naming convention is different
+     
+    
+ 
+    
+        # time estimation
+        print("Note: This is an estimated value, assuming perfect qubits are used. However, due to the fragility of quantum states, quantum error correction will require many more qubits than the ones shown below.")
+        req_qubits = (7 * ECC_key) + (4 * math.log(ECC_key + 10,2))
+        req_qubits2 = 5 * ECC_key + 8 * math.sqrt(ECC_key) + 4 * math.log(ECC_key + 10,2)
+        gates_time = 360 * ECC_key**3
+        
+        #req-qubits from the f(n) formula in 6.2
+        #req-qubits2 from the f'(n) formula in 6.2
+        #https://arxiv.org/pdf/quant-ph/0301141v2.pdf
+        
+        print()
+        print()
+        print("++++++++++++++++Output Data+++++++++++++++")
+        print()
+        print("For a key of size: %d" %(ECC_key))
+        print("Required perfect qubits: %d" %(req_qubits))
+        print("or")
+        print(req_qubits2)
+        print("Depending if register sharing is in effect")
+        print ("Number of Gates (Time) estimate: %d" %(gates_time))
+        print("In addition to error correction (EC) qubits + any overheads")
+  
+    
+      # --------------- Stage two (optional)
+        print()
+        print()
+        print("++++++++++++++++Optional - Classical Factorisation - Stage Two+++++++++++++++")      
+        stageTwo = input("Enter (y) to estimate the factorisation with classical means: ")
+        if stageTwo == "y":
+            GNFS(ECC_key)
+            
+            
+        # --------------- Function end - code returns to main menu
+    
+    
+def Grover ():
+    
+    #contributions from: https://www.quora.com/How-quickly-could-a-quantum-computer-hack-brute-force-its-way-through-todays-best-encryption-systems
+    
+    Grover_Key = int(input("Enter key size for Symmetric Algorithms (AES, DES) or hash functions or any such one way functions "))
+
+    print(" For the given key: ")
+    print()
+    print("Classical computing attempts required (brute-force):")
+    print("\033[1;31;48m") #for red colour - details here: https://ozzmaker.com/add-colour-to-text-in-python/#:~:text=To%20make%20some%20of%20your,right%20into%20the%20print%20statement.&text=1%20%3D%20Style%2C%201%20for%20normal.
+    print(2 ** Grover_Key)
+    print("\033[1;37;48m") #for white colour (reversal)
+    print("++++++++")
+    print("Quantum computing attempts (brute-force):")
+    print("\033[1;31;48m") #for red colour - details here: https://ozzmaker.com/add-colour-to-text-in-python/#:~:text=To%20make%20some%20of%20your,right%20into%20the%20print%20statement.&text=1%20%3D%20Style%2C%201%20for%20normal.
+    print( (2 ** Grover_Key) ** (1./2.) )
+    print("\033[1;37;48m") #for white colour (reversal)
+    print()
+    print()
+    print("Exact time required for classical computers would depend on the number of attempts a device could run per second.")
+    print("Given a single powerful CPU that can perform 30 attemps per second:")
+    print("\033[1;31;48m") #for red colour - details here: https://ozzmaker.com/add-colour-to-text-in-python/#:~:text=To%20make%20some%20of%20your,right%20into%20the%20print%20statement.&text=1%20%3D%20Style%2C%201%20for%20normal.
+    print("Seconds required:")
+    print((2**Grover_Key)/30)
+    print()
+    print("Days required:")
+    print((2**Grover_Key)/30/60/60/24)
+    print("\033[1;37;48m") #for white colour (reversal)
+    print()
+    print("Given a single powerful GPU that can perform 7200 attemps per second:")
+    print("\033[1;31;48m") #for red colour - details here: https://ozzmaker.com/add-colour-to-text-in-python/#:~:text=To%20make%20some%20of%20your,right%20into%20the%20print%20statement.&text=1%20%3D%20Style%2C%201%20for%20normal.
+    print("Seconds required:")
+    print((2**Grover_Key)/7200)
+    print()
+    print("Days required:")
+    print((2**Grover_Key)/7200/60/60/24)
+    print("\033[1;37;48m") #for white colour (reversal)
+    
+
+# CODE START HERE _______________________________________
+import math
+import sys
+from decimal import *
+getcontext().prec = 25
+
+active = True
+
+
+while active:
+    
+    menu()
+    userinput = input("Enter option (eg: 1): ")
+    
+    if userinput == "0":
+        active = False
+        #program termination
+    
+    if userinput == "1":
+        Shor()
+
+
+    if userinput == "2":
+        Grover()
+        
+    if userinput == "3":
+        key = int(input("Enter Key size: (eg 768)"))
+        GNFS(key)
+    
+
+ 
